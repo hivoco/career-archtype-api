@@ -126,7 +126,7 @@ const getQuizQuestion = async () => {
 
 //mera
 const calculateResult = async (data) => {
-  console.log("data.l", data.length);
+  
   const count_iteration = {};
   const details = [];
   let final_clusters = [];
@@ -158,7 +158,7 @@ const calculateResult = async (data) => {
         })
       );
       const cluster_dict = {};
-      console.log("key", obj);
+     
 
       await Promise.all(
         Object.entries(obj).map(async ([key]) => {
@@ -234,7 +234,13 @@ const calculateResult = async (data) => {
   // console.log("count_iteration", count_iteration);
   const cluster_array = await getTopTwoMaxCount(count_iteration);
   // cluster_array?.map((e) => {});
-  return { cluster_array, final_archetypes };
+  const archedata = await Promise.all(
+    final_archetypes.map(async (e) => {
+      return ArcheTypeModel.findById(e, "title image color");
+    })
+  );
+
+  return { cluster_array, archedata: archedata };
 };
 
 const quizServices = {
