@@ -19,6 +19,10 @@ const archeTypeSchema = new Schema(
       type: String,
       trim: true,
     },
+    isLeft: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
