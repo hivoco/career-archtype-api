@@ -1,0 +1,12 @@
+/node_modules
+/.env
+/public/CSV
+/uploads
+/public
+.DS_Store
+/image
+*.html
+*.java
+*.class
+*.jar
+test.js
