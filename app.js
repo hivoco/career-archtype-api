@@ -7,12 +7,13 @@ import { StatusCodes } from "http-status-codes";
 import ArchetypeModule from "./src/modules/ArcheType/index.js";
 import ClusterModule from "./src/modules/Cluster/index.js";
 import QuizModule from "./src/modules/Quiz/index.js";
+import PDFModule from "./src/modules/PDF/index.js";
 import cookieParser from "cookie-parser";
 // import { v2 as cloudinary } from "cloudinary";
 // const __filename = url.fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
-const modules = [ArchetypeModule, ClusterModule, QuizModule];
+const modules = [ArchetypeModule, ClusterModule, QuizModule, PDFModule];
 dotenv.config();
 
 export const createApp = () => {
@@ -23,7 +24,7 @@ export const createApp = () => {
   app.use(cookieParser());
 
   app.use((req, res, next) => {
-    const allowedOrigins = ["http://localhost:8806", "http://localhost:8804"];
+    const allowedOrigins = ["http://localhost:8806", "http://localhost:3000"];
     const origin = req.headers.origin;
 
     if (allowedOrigins.includes(origin)) {

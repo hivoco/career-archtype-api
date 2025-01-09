@@ -5,6 +5,7 @@ import assert from "assert";
 import QuestionModel from "./schema.js";
 import mongoose from "mongoose";
 import ClusterModel from "../Cluster/schema.js";
+import PDFModel from "../PDF/schema.js";
 
 const createQuestion = async (data) => {
   const { questionText, options } = data;
@@ -126,7 +127,6 @@ const getQuizQuestion = async () => {
 
 //mera
 const calculateResult = async (data) => {
-  
   const count_iteration = {};
   const details = [];
   let final_clusters = [];
@@ -158,7 +158,6 @@ const calculateResult = async (data) => {
         })
       );
       const cluster_dict = {};
-     
 
       await Promise.all(
         Object.entries(obj).map(async ([key]) => {
@@ -236,11 +235,20 @@ const calculateResult = async (data) => {
   // cluster_array?.map((e) => {});
   const archedata = await Promise.all(
     final_archetypes.map(async (e) => {
-      return ArcheTypeModel.findById(e, "title image color");
+      return ArcheTypeModel.findById(e, "title image color isLeft");
     })
   );
 
-  return { cluster_array, archedata: archedata };
+  const pdf = final_archetypes
+    ? await PDFModel.findOne(
+        {
+          archetypes: { $eq: final_archetypes },
+        },
+        { pdfUrl: 1, _id: 0,title:1 }
+      )
+    : "";
+
+  return { cluster_array, archedata: archedata, pdf };
 };
 
 const quizServices = {
