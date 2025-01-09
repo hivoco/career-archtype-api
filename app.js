@@ -24,7 +24,7 @@ export const createApp = () => {
   app.use(cookieParser());
 
   app.use((req, res, next) => {
-    const allowedOrigins = ["http://localhost:8806", "http://localhost:3000"];
+    const allowedOrigins = ["http://localhost:8806", "http://localhost:5173"];
     const origin = req.headers.origin;
 
     if (allowedOrigins.includes(origin)) {
