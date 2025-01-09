@@ -8,12 +8,19 @@ import ArchetypeModule from "./src/modules/ArcheType/index.js";
 import ClusterModule from "./src/modules/Cluster/index.js";
 import QuizModule from "./src/modules/Quiz/index.js";
 import PDFModule from "./src/modules/PDF/index.js";
+import UserModule from "./src/modules/User/index.js";
 import cookieParser from "cookie-parser";
 // import { v2 as cloudinary } from "cloudinary";
 // const __filename = url.fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
-const modules = [ArchetypeModule, ClusterModule, QuizModule, PDFModule];
+const modules = [
+  ArchetypeModule,
+  ClusterModule,
+  QuizModule,
+  PDFModule,
+  UserModule,
+];
 dotenv.config();
 
 export const createApp = () => {

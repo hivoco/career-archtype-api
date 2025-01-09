@@ -1,14 +1,14 @@
 import express from "express";
 import { httpHandler } from "../../../config/errorUtil.js";
-import archeTypeServices from "./service.js";
+import userServices from "./service.js";
 
 const router = express.Router();
 
 router.post(
-  "/create",
+  "/save-user-data",
   httpHandler(async (req, res) => {
     const data = req.body;
-    const result = await archeTypeServices.createArchetype(data);
+    const result = await userServices.saveUserData(data);
     res.send(result);
   })
 );
