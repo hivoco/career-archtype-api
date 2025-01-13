@@ -23,7 +23,7 @@ const getQuizQuestion = async () => {
   const result = await QuestionModel.find(
     {},
     { "options.archetype": 0, "options._id": 0 }
-  );
+  ).sort({ _id: -1 });
   return result;
 };
 
@@ -140,6 +140,8 @@ const calculateResult = async (data) => {
 
     if (sortedArray[1][1].count != sortedArray[2][1].count) {
       final_archetypes = [sortedArray[0][0], sortedArray[1][0]];
+      // console.log("final_archetypes", final_archetypes);
+
       final_clusters = await Promise.all(
         [sortedArray[0][0], sortedArray[1][0]].map(async (d) => {
           const cluster = await ClusterModel.find({
@@ -176,6 +178,7 @@ const calculateResult = async (data) => {
       );
 
       const values = Object.values(cluster_dict);
+      // console.log("cluster_dict", cluster_dict);
 
       if (Number(values[0]) != Number(values[1])) {
         final_clusters = Object.keys(cluster_dict);
@@ -244,7 +247,7 @@ const calculateResult = async (data) => {
         {
           archetypes: { $eq: final_archetypes },
         },
-        { pdfUrl: 1, _id: 0,title:1 }
+        { pdfUrl: 1, _id: 0, title: 1 }
       )
     : "";
 
