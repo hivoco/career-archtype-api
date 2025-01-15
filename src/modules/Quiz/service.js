@@ -384,15 +384,123 @@ const getQuizQuestion = async () => {
 //   return { archetypes: final_archetypes, archedata, pdf };
 // };
 
+// const calculateResult = async (data) => {
+//   const count_iteration = {}; // To store archetype counts
+//   const details = []; // To store question details
+//   let final_archetypes = []; // To store final archetypes
+
+//   // Track the order of first appearance
+//   const firstAppearanceIndex = {};
+
+//   // Count occurrences of archetypes and track first appearance
+//   for (let i = 0; i < data.length; i++) {
+//     const entry = data[i];
+
+//     const question = await QuestionModel.findOne({
+//       _id: entry.question_id.toString(),
+//       "options.text": entry.answer.trim(),
+//     });
+
+//     if (question) {
+//       const matchedOption = question.options.find(
+//         (opt) =>
+//           opt.text.toLowerCase().trim() === entry.answer.toLowerCase().trim()
+//       );
+
+//       const archetype = await ArcheTypeModel.findById(matchedOption.archetype);
+//       const archetypeId = archetype._id.toString();
+
+//       // Count the archetype
+//       count_iteration[archetypeId] = count_iteration[archetypeId]
+//         ? count_iteration[archetypeId] + 1
+//         : 1;
+
+//       // Track the first appearance index
+//       if (!(archetypeId in firstAppearanceIndex)) {
+//         firstAppearanceIndex[archetypeId] = i; // Save the index of first appearance
+//       }
+
+//       details.push({
+//         questionText: question.questionText,
+//         answer: matchedOption.text,
+//         archetype_name: archetype.title,
+//         archetype_id: archetypeId,
+//         color: archetype.color,
+//       });
+//     }
+//   }
+
+//   // Sort archetypes by count (desc) and then by first appearance (asc)
+//   const sortedArchetypes = Object.entries(count_iteration)
+//     .map(([id, count]) => ({
+//       id,
+//       count,
+//       firstIndex: firstAppearanceIndex[id],
+//     }))
+//     .sort((a, b) => {
+//       if (b.count === a.count) {
+//         // If counts are equal, compare by first appearance index
+//         return a.firstIndex - b.firstIndex;
+//       }
+//       return b.count - a.count; // Primary sort by count
+//     });
+
+//   // Pick top three archetypes
+//   const topThree = sortedArchetypes.slice(0, 3);
+
+//   if (topThree.length < 3) {
+//     throw new Error("Not enough archetypes to determine final selection.");
+//   }
+
+//   // Compare counts of top three archetypes
+//   const [first, second, third] = topThree;
+
+//   if (second.count !== third.count) {
+//     // If the second and third archetypes have different counts
+//     final_archetypes = [first.id, second.id];
+//   } else {
+//     // If the second and third archetypes have the same count
+//     const secondClusters = await ClusterModel.find({ archetype: second.id });
+//     const thirdClusters = await ClusterModel.find({ archetype: third.id });
+
+//     const secondClusterCount = secondClusters.reduce(
+//       (sum, cluster) => sum + cluster.count,
+//       0
+//     );
+//     const thirdClusterCount = thirdClusters.reduce(
+//       (sum, cluster) => sum + cluster.count,
+//       0
+//     );
+
+//     if (secondClusterCount > thirdClusterCount) {
+//       final_archetypes = [first.id, second.id];
+//     } else {
+//       final_archetypes = [first.id, third.id];
+//     }
+//   }
+
+//   // Fetch additional data for final archetypes
+//   const archedata = await Promise.all(
+//     final_archetypes.map((id) =>
+//       ArcheTypeModel.findById(id, "title image color isLeft")
+//     )
+//   );
+
+//   // Fetch PDF for the final archetypes
+//   const pdf = await PDFModel.findOne(
+//     { archetypes: { $eq: final_archetypes } },
+//     { pdfUrl: 1, title: 1 }
+//   );
+
+//   return { archetypes: final_archetypes, archedata, pdf };
+// };
+
 const calculateResult = async (data) => {
-  const count_iteration = {}; // To store archetype counts
-  const details = []; // To store question details
-  let final_archetypes = []; // To store final archetypes
-
-  // Track the order of first appearance
-  const firstAppearanceIndex = {};
-
-  // Count occurrences of archetypes and track first appearance
+  const archetypeScores = {}; // Stores the scores of each archetype
+  const details = []; // Stores question-answer details
+  const firstAppearanceIndex = {}; // Tracks the first occurrence of each archetype
+  let finalArchetypes = [];
+  // Count archetype scores and track first appearance
   for (let i = 0; i < data.length; i++) {
     const entry = data[i];
 
@@ -410,14 +518,12 @@ const calculateResult = async (data) => {
       const archetype = await ArcheTypeModel.findById(matchedOption.archetype);
       const archetypeId = archetype._id.toString();
 
-      // Count the archetype
-      count_iteration[archetypeId] = count_iteration[archetypeId]
-        ? count_iteration[archetypeId] + 1
-        : 1;
+      // Increment the score
+      archetypeScores[archetypeId] = (archetypeScores[archetypeId] || 0) + 1;
 
-      // Track the first appearance index
+      // Track the first appearance
       if (!(archetypeId in firstAppearanceIndex)) {
-        firstAppearanceIndex[archetypeId] = i; // Save the index of first appearance
+        firstAppearanceIndex[archetypeId] = i;
       }
 
       details.push({
@@ -430,72 +536,90 @@ const calculateResult = async (data) => {
     }
   }
 
-  // Sort archetypes by count (desc) and then by first appearance (asc)
-  const sortedArchetypes = Object.entries(count_iteration)
-    .map(([id, count]) => ({
+  // Sort archetypes by score and first appearance
+  const sortedArchetypes = Object.entries(archetypeScores)
+    .map(([id, score]) => ({
       id,
-      count,
+      score,
       firstIndex: firstAppearanceIndex[id],
     }))
     .sort((a, b) => {
-      if (b.count === a.count) {
-        // If counts are equal, compare by first appearance index
-        return a.firstIndex - b.firstIndex;
+      if (b.score === a.score) {
+        return a.firstIndex - b.firstIndex; // Secondary sort by first appearance
       }
-      return b.count - a.count; // Primary sort by count
+      return b.score - a.score; // Primary sort by score
     });
 
-  // Pick top three archetypes
-  const topThree = sortedArchetypes.slice(0, 3);
+  // Apply Rule 2: Identify the top 2 archetypes
+  const topArchetypes = sortedArchetypes.slice(0, 3);
 
-  if (topThree.length < 3) {
-    throw new Error("Not enough archetypes to determine final selection.");
+  if (topArchetypes.length < 2) {
+    throw new Error("Not enough archetypes to determine results.");
   }
 
-  // Compare counts of top three archetypes
-  const [first, second, third] = topThree;
+  const [first, second, third] = topArchetypes;
 
-  if (second.count !== third.count) {
-    // If the second and third archetypes have different counts
-    final_archetypes = [first.id, second.id];
-  } else {
-    // If the second and third archetypes have the same count
+  // Check for a clash (Rule 3)
+  if (third && second.score === third.score) {
     const secondClusters = await ClusterModel.find({ archetype: second.id });
     const thirdClusters = await ClusterModel.find({ archetype: third.id });
 
-    const secondClusterCount = secondClusters.reduce(
+    const secondClusterScore = secondClusters.reduce(
       (sum, cluster) => sum + cluster.count,
       0
     );
-    const thirdClusterCount = thirdClusters.reduce(
+    const thirdClusterScore = thirdClusters.reduce(
       (sum, cluster) => sum + cluster.count,
       0
     );
 
-    if (secondClusterCount > thirdClusterCount) {
-      final_archetypes = [first.id, second.id];
+    if (secondClusterScore !== thirdClusterScore) {
+      // Choose the archetype from the top-scoring cluster
+      finalArchetypes = [
+        first.id,
+        secondClusterScore > thirdClusterScore ? second.id : third.id,
+      ];
     } else {
-      final_archetypes = [first.id, third.id];
+      // Rule 4: Compare individual scores within clusters
+      const secondHighestInCluster = secondClusters.reduce(
+        (max, cluster) => (cluster.count > max ? cluster.count : max),
+        0
+      );
+      const thirdHighestInCluster = thirdClusters.reduce(
+        (max, cluster) => (cluster.count > max ? cluster.count : max),
+        0
+      );
+
+      if (secondHighestInCluster !== thirdHighestInCluster) {
+        finalArchetypes = [
+          first.id,
+          secondHighestInCluster > thirdHighestInCluster ? second.id : third.id,
+        ];
+      } else {
+        // Rule 5: If unresolved, only return the top archetype
+        finalArchetypes = [first.id];
+      }
     }
+  } else {
+    // No clash, return top 2 archetypes
+    finalArchetypes = [first.id, second.id];
   }
 
   // Fetch additional data for final archetypes
   const archedata = await Promise.all(
-    final_archetypes.map((id) =>
+    finalArchetypes.map((id) =>
       ArcheTypeModel.findById(id, "title image color isLeft")
     )
   );
 
   // Fetch PDF for the final archetypes
   const pdf = await PDFModel.findOne(
-    { archetypes: { $eq: final_archetypes } },
+    { archetypes: { $eq: finalArchetypes } },
     { pdfUrl: 1, title: 1 }
   );
 
-  return { archetypes: final_archetypes, archedata, pdf };
+  return { archetypes: finalArchetypes, archedata, pdf };
 };
-
-
 
 const quizServices = {
   createQuestion,
