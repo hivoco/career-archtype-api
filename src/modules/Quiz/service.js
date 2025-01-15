@@ -558,46 +558,118 @@ const calculateResult = async (data) => {
   }
 
   const [first, second, third] = topArchetypes;
+  console.log("topArchetypes", first, second, third);
+  console.log("topArchetypes", topArchetypes);
+  console.log("archetypeScores", archetypeScores);
+  //cluster info
+  const calculateClusterInfo = async (archetypeScores) => {
+    const allClusterScoreInfo = {};
 
-  // Check for a clash (Rule 3)
+    // Iterate through each archetype score
+    for (const [archetypeId, score] of Object.entries(archetypeScores)) {
+      try {
+        // Fetch clusters for the current archetype from the database
+        const clusters = await ClusterModel.findOne({
+          archetype: { $in: [archetypeId] },
+        });
+
+        // If the cluster already exists in allClusterScoreInfo, update the score
+        if (allClusterScoreInfo[clusters._id.toString()]) {
+          allClusterScoreInfo[clusters._id.toString()].score += score;
+          allClusterScoreInfo[clusters._id.toString()].archetype_id.push(
+            archetypeId
+          );
+        } else {
+          // If the cluster is not present, add it with the current score
+          allClusterScoreInfo[clusters._id.toString()] = {
+            cluster_id: clusters._id.toString(),
+            archetype_id: [archetypeId],
+            score: score,
+          };
+        }
+      } catch (error) {
+        console.error(
+          `Error fetching clusters for archetype ${archetypeId}:`,
+          error
+        );
+      }
+    }
+
+    return allClusterScoreInfo;
+  };
+
   if (third && second.score === third.score) {
-    const secondClusters = await ClusterModel.find({ archetype: second.id });
-    const thirdClusters = await ClusterModel.find({ archetype: third.id });
+    if (first.score === second.score) {
+      const allClusterInfo = await calculateClusterInfo(archetypeScores);
+      const firstClusters = await ClusterModel.findOne({
+        archetype: first.id,
+      });
+      const secondClusters = await ClusterModel.findOne({
+        archetype: second.id,
+      });
+      const thirdClusters = await ClusterModel.findOne({ archetype: third.id });
+      const fid = firstClusters._id.toString();
+      const sid = secondClusters._id.toString();
+      const tid = thirdClusters._id.toString();
+      const firstClusterScore = allClusterInfo[fid].score;
+      const secondClusterScore = allClusterInfo[sid].score;
+      const thirdClusterScore = allClusterInfo[tid].score;
 
-    const secondClusterScore = secondClusters.reduce(
-      (sum, cluster) => sum + cluster.count,
-      0
-    );
-    const thirdClusterScore = thirdClusters.reduce(
-      (sum, cluster) => sum + cluster.count,
-      0
-    );
-
-    if (secondClusterScore !== thirdClusterScore) {
-      // Choose the archetype from the top-scoring cluster
-      finalArchetypes = [
-        first.id,
-        secondClusterScore > thirdClusterScore ? second.id : third.id,
+      const clusterScores = [
+        ["first", firstClusterScore],
+        ["second", secondClusterScore],
+        ["third", thirdClusterScore],
       ];
-    } else {
-      // Rule 4: Compare individual scores within clusters
-      const secondHighestInCluster = secondClusters.reduce(
-        (max, cluster) => (cluster.count > max ? cluster.count : max),
-        0
-      );
-      const thirdHighestInCluster = thirdClusters.reduce(
-        (max, cluster) => (cluster.count > max ? cluster.count : max),
-        0
-      );
+      // console.log("1clusterScores", clusterScores);
+      // console.log("allClusterInfo", allClusterInfo);
 
-      if (secondHighestInCluster !== thirdHighestInCluster) {
-        finalArchetypes = [
-          first.id,
-          secondHighestInCluster > thirdHighestInCluster ? second.id : third.id,
-        ];
+      // Sort the array by score in descending order
+      clusterScores.sort((a, b) => b[1] - a[1]);
+      // console.log("2clusterScores", clusterScores);
+      // Get the top two clusters
+      const topTwoClusters = clusterScores.slice(0, 2);
+      // console.log("topTwoClusters", topTwoClusters);
+      finalArchetypes;
+      if (topTwoClusters[0][0] == "first") {
+        finalArchetypes.push(first.id);
+      }
+      if (topTwoClusters[0][0] == "second") {
+        finalArchetypes.push(second.id);
+      }
+      if (topTwoClusters[0][0] == "third") {
+        finalArchetypes.push(third.id);
+      }
+      if (topTwoClusters[1][0] == "first") {
+        finalArchetypes.push(first.id);
+      }
+      if (topTwoClusters[1][0] == "second") {
+        finalArchetypes.push(second.id);
+      }
+      if (topTwoClusters[1][0] == "third") {
+        finalArchetypes.push(third.id);
+      }
+    } else {
+      const allClusterInfo = await calculateClusterInfo(archetypeScores);
+      // console.log("calculateClusterInfo", c);
+
+      const secondClusters = await ClusterModel.findOne({
+        archetype: second.id,
+      });
+      const thirdClusters = await ClusterModel.findOne({ archetype: third.id });
+      const sid = secondClusters._id.toString();
+      const tid = thirdClusters._id.toString();
+      if (sid === tid) {
+        finalArchetypes = [second.id, third.id];
       } else {
-        // Rule 5: If unresolved, only return the top archetype
-        finalArchetypes = [first.id];
+        const secondClusterScore = allClusterInfo[sid].score;
+        const thirdClusterScore = allClusterInfo[tid].score;
+        if (secondClusterScore > thirdClusterScore) {
+          finalArchetypes = [first.id, second.id];
+        } else if (secondClusterScore < thirdClusterScore) {
+          finalArchetypes = [first.id, third.id];
+        } else {
+          finalArchetypes = [first.id, second.id];
+        }
       }
     }
   } else {
@@ -605,12 +677,58 @@ const calculateResult = async (data) => {
     finalArchetypes = [first.id, second.id];
   }
 
+  // if (third && second.score === third.score) {
+  //   const secondClusters = await ClusterModel.find({ archetype: second.id });
+  //   const thirdClusters = await ClusterModel.find({ archetype: third.id });
+
+  //   const secondClusterScore = secondClusters.reduce(
+  //     (sum, cluster) => sum + cluster.count,
+  //     0
+  //   );
+  //   const thirdClusterScore = thirdClusters.reduce(
+  //     (sum, cluster) => sum + cluster.count,
+  //     0
+  //   );
+
+  //   if (secondClusterScore !== thirdClusterScore) {
+  //     // Choose the archetype from the top-scoring cluster
+  //     finalArchetypes = [
+  //       first.id,
+  //       secondClusterScore > thirdClusterScore ? second.id : third.id,
+  //     ];
+  //   } else {
+  //     // Rule 4: Compare individual scores within clusters
+  //     const secondHighestInCluster = secondClusters.reduce(
+  //       (max, cluster) => (cluster.count > max ? cluster.count : max),
+  //       0
+  //     );
+  //     const thirdHighestInCluster = thirdClusters.reduce(
+  //       (max, cluster) => (cluster.count > max ? cluster.count : max),
+  //       0
+  //     );
+
+  //     if (secondHighestInCluster !== thirdHighestInCluster) {
+  //       finalArchetypes = [
+  //         first.id,
+  //         secondHighestInCluster > thirdHighestInCluster ? second.id : third.id,
+  //       ];
+  //     } else {
+  //       // Rule 5: If unresolved, only return the top archetype
+  //       finalArchetypes = [first.id];
+  //     }
+  //   }
+  // } else {
+  //   // No clash, return top 2 archetypes
+  //   finalArchetypes = [first.id, second.id];
+  // }
+
   // Fetch additional data for final archetypes
   const archedata = await Promise.all(
     finalArchetypes.map((id) =>
       ArcheTypeModel.findById(id, "title image color isLeft")
     )
   );
+  // console.log("archedata", archedata);
 
   // Fetch PDF for the final archetypes
   const pdf = await PDFModel.findOne(
