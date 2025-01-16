@@ -10,6 +10,10 @@ const pdfSchema = new Schema(
       ref: "ArcheType",
       required: true,
     },
+    description: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

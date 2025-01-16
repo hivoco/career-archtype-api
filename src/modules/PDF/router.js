@@ -40,4 +40,28 @@ router.post("/upload", async (req, res) => {
   }
 });
 
+// API Route to update an archetype by ID
+// router.put("/update-archetype/:id", async (req, res) => {
+//   const { id } = req.params;
+//   const { description } = req.body;
+
+//   try {
+//     // Find the archetype by ID and update it
+//     const updatedArchetype = await PDFModel.findOneAndUpdate(
+//       { id: id }, // Search by 'id'
+//       { description }, // Fields to update
+//       { new: true } // Return the updated document
+//     );
+
+//     if (!updatedArchetype) {
+//       return res.status(404).send({ message: "Archetype not found" });
+//     }
+
+//     // Respond with the updated archetype
+//     res.status(200).json(updatedArchetype);
+//   } catch (err) {
+//     res.status(500).send({ message: "Error updating archetype", error: err });
+//   }
+// });
+
 export default router;

@@ -5,6 +5,7 @@ import assert from "assert";
 import QuestionModel from "./schema.js";
 import mongoose from "mongoose";
 import ClusterModel from "../Cluster/schema.js";
+import CombinationModel from "../Combination/schema.js";
 import PDFModel from "../PDF/schema.js";
 
 const createQuestion = async (data) => {
@@ -558,9 +559,9 @@ const calculateResult = async (data) => {
   }
 
   const [first, second, third] = topArchetypes;
-  console.log("topArchetypes", first, second, third);
-  console.log("topArchetypes", topArchetypes);
-  console.log("archetypeScores", archetypeScores);
+  // console.log("topArchetypes", first, second, third);
+  // console.log("topArchetypes", topArchetypes);
+  // console.log("archetypeScores", archetypeScores);
   //cluster info
   const calculateClusterInfo = async (archetypeScores) => {
     const allClusterScoreInfo = {};
@@ -736,7 +737,38 @@ const calculateResult = async (data) => {
     { pdfUrl: 1, title: 1 }
   );
 
-  return { archetypes: finalArchetypes, archedata, pdf };
+  const seenClusters = new Set();
+  const finalCluster = [];
+
+  for (const id of finalArchetypes) {
+    const clusters = await ClusterModel.findOne({
+      archetype: { $in: [id] },
+    });
+
+    if (clusters) {
+      const clusterId = clusters._id.toString();
+
+      // Add only if clusterId is not already in the set
+      if (!seenClusters.has(clusterId)) {
+        seenClusters.add(clusterId);
+        finalCluster.push(clusterId);
+      }
+    }
+  }
+  // console.log("finalCluster", finalCluster);
+
+  const description = await CombinationModel.findOne(
+    {
+      clusters: {
+        $all: finalCluster,
+      }, // Convert strings back to ObjectId
+    },
+    "description -_id"
+  );
+
+  // console.log("description", description);
+
+  return { archetypes: finalArchetypes, archedata, pdf, description };
 };
 
 const quizServices = {

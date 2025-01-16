@@ -9,6 +9,7 @@ import ClusterModule from "./src/modules/Cluster/index.js";
 import QuizModule from "./src/modules/Quiz/index.js";
 import PDFModule from "./src/modules/PDF/index.js";
 import UserModule from "./src/modules/User/index.js";
+import CombinationModule from "./src/modules/Combination/index.js";
 import cookieParser from "cookie-parser";
 // import { v2 as cloudinary } from "cloudinary";
 // const __filename = url.fileURLToPath(import.meta.url);
@@ -20,6 +21,7 @@ const modules = [
   QuizModule,
   PDFModule,
   UserModule,
+  CombinationModule,
 ];
 dotenv.config();
 
